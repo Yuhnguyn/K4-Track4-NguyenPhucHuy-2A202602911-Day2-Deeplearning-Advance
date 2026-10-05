@@ -1,52 +1,73 @@
 # Submission — Lab Day 2 (Track 4) · Nguyễn Phúc Huy · 2A202602911
 
-**Trạng thái:** bộ code và notebook đã hoàn thiện và đã kiểm thử; các bước cần GPU (Bước 1–4)
-đang chờ chạy đủ trên T4. Notebook tự sinh `results.xlsx`, `curves/`, `predictions/`, `report.md`
-và ghi đè chính `README.md` này bằng bản có đầy đủ số liệu chạy thật.
+## Kết quả test (chính thức, tính bằng `eval.py` của đề)
 
-## Chạy lại (một lần, trên GPU)
+| | Mốc `T00` + `I00` | **Chung kết `F01`** |
+|---|---|---|
+| macro-F1 (mean ± std, 3 seed) | 0.7977 ± 0.0008 | **0.9734 ± 0.0015** |
+| top-1 | 80.83 % | **97.93 %** |
+| ECE sau hiệu chuẩn | 0.0217 | **0.0050** |
 
-1. Mở notebook trên Google Colab (repo công khai nên link mở thẳng):
+Δ = **+0.1758** macro-F1. Tự chấm RUBRIC phần I: **20/20**.
+Cấu hình chung kết: **convnext_tiny** + tổ hợp công thức `T12` + suy luận `I04_256` (1 view @256) + temperature scaling (T = 1.5060).
+Độ trễ batch-1 fp32: p50 5.56 ms · p95 5.82 ms (ngân sách 100 ms).
 
-   `https://colab.research.google.com/github/Yuhnguyn/K4-Track4-NguyenPhucHuy-2A202602911-Day2-Deeplearning-Advance/blob/main/submissions/2A202602911_nguyenphuchuy/code/lab_day2.ipynb`
+## Chạy lại
 
-2. *Runtime → Change runtime type → T4 GPU*.
-3. *Run all*. Notebook sẽ: clone repo → tải DeepWeeds (Zenodo, kiểm tra MD5) → chạy Bước 0→5.
-   Mọi bước **cache-aware** (`runs/<exp_id>/seed<k>/done.json`): chạy lại chỉ huấn luyện phần còn thiếu.
-   Chạy từng bước bằng biến môi trường `LAB_STAGE` = `b0|b1|b2|b3|b4|b5` (rỗng/tất cả = chạy hết),
-   và `LAB_ONLY`/`LAB_SEEDS` để giới hạn từng `exp_id`/seed.
-4. Ô cuối gói toàn bộ thư mục nộp thành `submission_2A202602911_nguyenphuchuy.tar.gz` để tải về.
+**Cách 1 — Kaggle (phiên chạy đầy đủ, xem được output từng cell):**
 
-## Nội dung thư mục
-
-| File | Nội dung |
-|---|---|
-| `code/dataset.py` | đọc/chia dữ liệu (S1–S6), 4 kiểm tra bắt buộc, transform + 6 mức augmentation, `Dataset`, `DataLoader` (kể cả balanced sampler) |
-| `code/model.py` | `timm` backbone, đóng băng, 4 nhóm tham số (wd = 0 cho norm/bias), đếm params/GMAC (fvcore) |
-| `code/losses.py` | CE · label smoothing · focal · CE có trọng số lớp (beta=0 và class-balanced), Mixup/CutMix |
-| `code/train.py` | một hàm `run(cfg)` cho mọi thí nghiệm: AMP, warmup+cosine, EMA, chọn checkpoint theo macro-F1 val, ghi config/history/checkpoint/logit/prediction |
-| `code/inference.py` | TTA lật & multi-crop & multi-scale, gộp xác suất/logit, ensemble, temperature scaling, gộp BatchNorm |
-| `code/benchmark.py` | đo độ trễ đúng cách: warmup, `cuda.synchronize`, ≥ 50 lượt, p50/p95/p99, độ trễ TTA K view |
-| `code/test_code.py` | **28 test tự viết** (xem dưới) |
-| `code/eval.py` | bản sao **y nguyên** của `eval.py` gốc, không sửa (SHA-256 `7a9f8678…4cc0`) |
-| `code/lab_day2.ipynb` | notebook chạy toàn bộ Bước 0→5 |
-
-## Kiểm thử
-
-```bash
-cd code && python -m unittest discover -s . -p "test_*.py" -v     # 28 test
-python -m unittest discover -s ../../tests                        # test của repo (38 test) vẫn xanh
+```
+https://www.kaggle.com/code/nguynhuy9669/lab-day2-track4-2a202602911-r2
+Settings: Accelerator = GPU (T4) · Internet = On   ->   Run all
 ```
 
-`test_code.py` kiểm tra đúng những chỗ dễ sai: focal `γ=0` ≡ CE (sai số < 1e-6), label smoothing
-`ε=0` ≡ CE, **CutMix: λ khớp diện tích hộp thực sau khi cắt ra ngoài biên**, `mixed_loss` là tổng
-có trọng số, weight decay = 0 cho norm/bias, head có LR gấp 10 backbone, đóng băng backbone +
-giữ BN ở eval, warmup→cosine về ~0, EMA đúng công thức, gộp BatchNorm sai số ≤ 1e-4,
-temperature scaling giảm NLL và **không đổi argmax**, và một test **đầu-cuối** chạy `train.run()`
-trên dataset nhỏ để chắc mọi artifact + file dự đoán qua được `eval.read_pred`/`check_against_csv`.
+**Cách 2 — Colab:** mở `code/lab_day2.ipynb` từ GitHub rồi *Run all* (Runtime → T4 GPU):
+
+```
+https://colab.research.google.com/github/Yuhnguyn/K4-Track4-NguyenPhucHuy-2A202602911-Day2-Deeplearning-Advance/blob/main/submissions/2A202602911_nguyenphuchuy/code/lab_day2.ipynb
+```
+
+Notebook tự clone repo, tải DeepWeeds (Zenodo, kiểm tra MD5), rồi chạy Bước 0→5.
+Mọi bước **cache-aware**: chạy lại chỉ huấn luyện phần còn thiếu (`runs/<exp_id>/seed<k>/done.json`).
+Muốn chạy từng bước: đặt `LAB_STAGE` = `b0` | `b1` | `b2` | `b3` | `b4` | `b5` trước khi chạy cell.
+
+## Phiên bản thư viện
+
+| | |
+|---|---|
+| Python | 3.13.15 |
+| torch | 2.11.0+cu128 |
+| timm | 1.0.29 |
+| torchvision | 0.26.0+cu128 |
+| GPU | Tesla T4 |
+
+## Thứ tự chạy và seed
+
+1. `B01`–`B06`: so sánh backbone, công thức nền `T00`, **seed 0**.
+2. `T01`–`T12`: ablation công thức huấn luyện (mỗi lần khác nền một yếu tố), **seed 0**.
+3. `I00`–`I08`: suy luận trên **val** (không huấn luyện lại) + đo độ trễ.
+4. `T00` (mốc) và `F01` (chung kết): **seed 0, 1, 2**; **test chạy đúng một lần mỗi seed**.
+
+## Kiểm tra tự viết
+
+```bash
+cd code && python -m unittest discover -s . -p "test_*.py" -v   # 28 test
+```
+
+Bao gồm: focal `γ=0` ≡ CE, label smoothing `ε=0` ≡ CE, CutMix λ theo diện tích hộp thực,
+weight decay = 0 cho norm/bias, đóng băng backbone, gộp BN sai số ≤ 1e-4, temperature scaling giữ nguyên argmax,
+và một test đầu-cuối chạy `train.run()` trên dataset nhỏ để chắc mọi artifact + file dự đoán hợp lệ với `eval.py`.
 
 ## Ghi chú
 
-- `starter/` trong repo vẫn **nguyên bản** (không sửa tại chỗ) nên `python -m unittest discover -s tests`
-  vẫn xanh; toàn bộ phần hoàn thiện nằm trong `code/`.
-- `eval.py` không bị sửa (so SHA-256 với bản gốc trong repo).
+- `code/eval.py` là **bản sao y nguyên** của `eval.py` trong repo gốc (SHA-256
+  `7a9f86781ac219747ea502b642db8fa8ff2e8d5796fdad9a658729546c0f4cc0`), **không sửa**.
+- `starter/` trong repo vẫn nguyên bản (không sửa tại chỗ) để `python -m unittest discover -s tests` xanh.
+- **Hai lỗi đã tìm và sửa trong notebook** (đều là lỗi đọc dữ liệu, không ảnh hưởng tới chỉ số đã báo cáo):
+  1. Bước 4: cấu hình tổ hợp đọc từ hàng `T12` của pandas là `numpy.int64` → `json.dumps(asdict(cfg))`
+     ném `TypeError: Object of type int64 is not JSON serializable`. Đã đổi về kiểu Python bằng `.item()`.
+  2. Bước 5: `eval.py` ghi số ảnh test mỗi lớp vào `eval_out/<tag>_per_class.csv`, **không** có trong
+     `<tag>_summary.json`; cell tạo sheet `PerClass` đọc sai chỗ → `KeyError: 'support'`. Đã đọc đúng file;
+     đồng thời tra tên lớp không phân biệt hoa/thường (`Chinee apple` / `Snake weed` trong `labels.csv`).
+- `curves/` có ảnh đường cong cho **từng** `exp_id` (B, T, T00, F01) + 2 ảnh tổng hợp
+  (`SUMMARY_tradeoff_and_confusion.png`, `SUMMARY_ablation_delta.png`).
