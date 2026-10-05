@@ -14,12 +14,17 @@ Cấu hình chung kết: **convnext_tiny** + tổ hợp công thức `T12` + suy
 
 ## Chạy lại
 
-**Cách 1 — Kaggle (phiên chạy đầy đủ, xem được output từng cell):**
+**Cách 1 — Kaggle (phiên chạy thật trên T4, xem được output từng cell):**
 
 ```
 https://www.kaggle.com/code/nguynhuy9669/lab-day2-track4-2a202602911-r2
 Settings: Accelerator = GPU (T4) · Internet = On   ->   Run all
 ```
+
+> Phiên này chạy trọn Bước 0→**4** (6 backbone · 12 ablation · suy luận · 3 seed chung kết)
+> rồi dừng ở Bước 5 vì 2 lỗi đọc dữ liệu. Hai lỗi **đã vá trong `code/lab_day2.ipynb`**
+> (xem mục Ghi chú), và `results.xlsx` / `report.md` được sinh lại từ **chính artifact của phiên đó**
+> — không có số nào viết tay hay chạy lại GPU.
 
 **Cách 2 — Colab:** mở `code/lab_day2.ipynb` từ GitHub rồi *Run all* (Runtime → T4 GPU):
 
